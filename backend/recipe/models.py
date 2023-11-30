@@ -1,14 +1,12 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from constants import (
     MAX_LENGTH_INGRIDIENT_NAME, MAX_LENGTH_UNITS_MEASURE,
-    MAX_LENGTH_TAG_NAME, MAX_LENGTH_SLUG, MAX_LENGTH_COLOR
+    MAX_LENGTH_TAG_NAME, MAX_LENGTH_SLUG, MAX_LENGTH_COLOR,
+    MAX_LENGTH_RECIPE
 )
-from django.db.models import UniqueConstraint
-
-from backend.constants import MAX_LENGTH_RECIPE
-from backend.recipe.validators import validate_cooking_time
 
 User = get_user_model()
 
@@ -20,10 +18,6 @@ class Ingredient(models.Model):
         max_length=MAX_LENGTH_INGRIDIENT_NAME,
         blank=False,
         verbose_name='Название'
-    )
-    quantity = models.IntegerField(
-        blank=False,
-        verbose_name='Количество'
     )
     units_measurement = models.CharField(
         max_length=MAX_LENGTH_UNITS_MEASURE,
@@ -105,7 +99,10 @@ class Recipe(models.Model):
     )
     cooking_time = models.IntegerField(
         blank=False,
-        validators=(validate_cooking_time,),
+        validators=(
+            MinValueValidator(1),
+            MaxValueValidator(240),
+        ),
         verbose_name='Время приготовления рецепта'
     )
     pub_date = models.DateTimeField(
@@ -141,12 +138,6 @@ class ShoppingCart(models.Model):
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Список покупок'
-        constraints = [
-            UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='user_recipe_cart'
-            )
-        ]
 
     def __str__(self):
         return f'{self.user} добавил в корзину {self.recipe}'
@@ -171,12 +162,34 @@ class Favorite(models.Model):
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
-        constraints = [
-            UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='user_recipe_favorite'
-            )
-        ]
 
     def __str__(self):
         return f'{self.user} добавил {self.recipe} в избранное'
+
+
+class IngredientsAmount(models.Model):
+    """Абстрактная модель посредник для связи между Recipe и Ingredient."""
+
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='recipes_amount',
+        verbose_name='Рецепт'
+    )
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='ingredients_amount',
+        verbose_name='Ингредиенты'
+    )
+    amount = models.PositiveIntegerField(
+        default=1,
+        validators=(
+            MinValueValidator(1),
+            MaxValueValidator(1000),
+        ),
+        verbose_name='Количество',
+    )
+
+    def __str__(self):
+        return f'{self.recipe} - {self.ingredient}: {self.amount}'
