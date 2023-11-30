@@ -34,7 +34,36 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ['id']
+        ordering = ('id',)
+        constraints = (
+            models.UniqueConstraint(
+                fields=('username',), name='unique_username'
+            ),
+            models.UniqueConstraint(
+                fields=('email',), name='unique_email'
+            ),
+        )
 
         def __str__(self):
             return self.username
+
+
+class Subscriber(models.Model):
+    """Кастомная модель для подписок на автора"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Подписчик'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Подписчик автора'
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+
+    def __str__(self):
+        return f'{self.user} подписался на {self.author}'
