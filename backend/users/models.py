@@ -2,7 +2,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 from constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_FIRST_NAME,
-                       MAX_LENGTH_LAST_NAME, MAX_LENGTH_USERNAME)
+                       MAX_LENGTH_LAST_NAME, MAX_LENGTH_USERNAME,
+                       MAX_LENGTH_PASSWORD)
+
+from validators import username_regular
 
 
 class User(AbstractUser):
@@ -12,6 +15,7 @@ class User(AbstractUser):
         max_length=MAX_LENGTH_EMAIL,
         blank=False,
         unique=True,
+        validators=(username_regular,),
         verbose_name='Никнейм'
     )
     first_name = models.CharField(
@@ -29,6 +33,11 @@ class User(AbstractUser):
         blank=False,
         unique=True,
         verbose_name='Электроная почта'
+    )
+    password = models.CharField(
+        max_length=MAX_LENGTH_PASSWORD,
+        blank=False,
+        verbose_name='Пароль'
     )
 
     class Meta:
@@ -48,16 +57,18 @@ class User(AbstractUser):
             return self.username
 
 
-class Subscriber(models.Model):
+class Follow(models.Model):
     """Кастомная модель для подписок на автора"""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='follower',
         verbose_name='Подписчик'
     )
-    author = models.ForeignKey(
+    following = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        related_name='following',
         verbose_name='Подписчик автора'
     )
 
@@ -66,4 +77,4 @@ class Subscriber(models.Model):
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return f'{self.user} подписался на {self.author}'
+        return f'{self.user} подписался на {self.subscriber}'
