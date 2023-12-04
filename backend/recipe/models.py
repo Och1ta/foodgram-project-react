@@ -71,29 +71,32 @@ class Recipe(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='recipes',
+        blank=False,
         verbose_name='Автор рецепта'
     )
     name = models.CharField(
         max_length=MAX_LENGTH_RECIPE,
+        blank=False,
         verbose_name='Название рецепта'
     )
     image = models.ImageField(
-        upload_to='recipies/images/',
-        null=True,
-        blank=True,
+        upload_to='recipe/images/',
+        blank=False,
         verbose_name='Изображение рецепта',
     )
     text = models.TextField(
+        blank=False,
         verbose_name='Описание рецепта'
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngridientInRecipe',
+        blank=False,
+        through='IngredientsAmount',
         verbose_name='Ингредиенты'
     )
     tags = models.ManyToManyField(
         Tag,
-        through='RecipeTag',
+        blank=False,
         related_name='tags',
         verbose_name='Теги'
     )
@@ -105,15 +108,10 @@ class Recipe(models.Model):
         ),
         verbose_name='Время приготовления рецепта'
     )
-    pub_date = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата публикации'
-    )
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ['-pub_date']
 
     def __str__(self):
         return self.name
