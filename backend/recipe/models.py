@@ -1,18 +1,20 @@
+from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db import models
 
 from constants import (
     MAX_LENGTH_INGRIDIENT_NAME, MAX_LENGTH_UNITS_MEASURE,
     MAX_LENGTH_TAG_NAME, MAX_LENGTH_SLUG, MAX_LENGTH_COLOR,
-    MAX_LENGTH_RECIPE
+    MAX_LENGTH_RECIPE, MINIMUM_INGREDIENT_AMOUNT,
+    MAXIMUM_INGREDIENT_AMOUNT
 )
+
 
 User = get_user_model()
 
 
 class Ingredient(models.Model):
-    """Абстрактная модель класса Ингредиента"""
+    """Абстрактная модель класса Ingredient."""
 
     name = models.CharField(
         max_length=MAX_LENGTH_INGRIDIENT_NAME,
@@ -31,11 +33,11 @@ class Ingredient(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return f'{self.name}, {self.measurement_unit}'
+        return f'{self.name}, {self.units_measurement}'
 
 
 class Tag(models.Model):
-    """Абстрактная модель класса Тега"""
+    """Абстрактная модель класса Tag."""
     name = models.CharField(
         max_length=MAX_LENGTH_TAG_NAME,
         unique=True,
@@ -58,14 +60,14 @@ class Tag(models.Model):
     class Meta:
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
-        ordering = ['name']
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
 
 
 class Recipe(models.Model):
-    """Модель рецепта"""
+    """Абстрактная модель Recipe."""
 
     author = models.ForeignKey(
         User,
@@ -118,7 +120,7 @@ class Recipe(models.Model):
 
 
 class ShoppingCart(models.Model):
-    """Модель корзины."""
+    """Абстрактная модель Shopping Cart."""
 
     user = models.ForeignKey(
         User,
@@ -142,7 +144,7 @@ class ShoppingCart(models.Model):
 
 
 class Favorite(models.Model):
-    """Модель добавления рецепта в избранное."""
+    """Абстрактная модель добавления рецепта в избранное."""
 
     user = models.ForeignKey(
         User,
@@ -183,8 +185,8 @@ class IngredientsAmount(models.Model):
     amount = models.PositiveIntegerField(
         default=1,
         validators=(
-            MinValueValidator(1),
-            MaxValueValidator(1000),
+            MinValueValidator(MINIMUM_INGREDIENT_AMOUNT),
+            MaxValueValidator(MAXIMUM_INGREDIENT_AMOUNT),
         ),
         verbose_name='Количество',
     )
