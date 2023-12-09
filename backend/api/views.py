@@ -1,13 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from backend.api.serializers import UserSerializer, FollowingSerializer
+from backend.api.serializers import UserSerializer, FollowingSerializer, IngredientSerializer, TagSerializer
+from backend.recipe.filters import SearchIngredientFilter
+from backend.recipe.models import Ingredient, Tag
 from backend.users.models import Follow
 
 
@@ -90,3 +93,22 @@ class UserViewSet(UserViewSet):
             context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
+
+
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet Ingredient."""
+
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = SearchIngredientFilter
+    pagination_class = None
+
+
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet Tag."""
+
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    pagination_class = None
+
