@@ -9,11 +9,13 @@ from constants import (
     MINIMUM_COOKING_TIME, MINIMUM_INGREDIENT_AMOUNT,
     MAXIMUM_INGREDIENT_AMOUNT, MAXIMUM_COOKING_TIME
 )
-from recipes.models import (
-    Favourite, Follow, Ingredient, IngredientsAmount, Recipe,
-    ShoppingCart, Tag
+from recipe.models import (
+    Tag, Recipe, Ingredient, IngredientsAmount,
+    Favorite, ShoppingCart
 )
 from users.validators import ValidateUsername
+from users.models import Follow
+
 
 User = get_user_model()
 
@@ -195,7 +197,7 @@ class GetRecipeSerializer(serializers.ModelSerializer):
         """Проверка на нахождение рецепта в списке избранного."""
         return (
             self.context.get('request').user.is_authenticated
-            and Favourite.objects.filter(
+            and Favorite.objects.filter(
                 user=self.context['request'].user, recipe=obj).exists()
         )
 
@@ -330,17 +332,17 @@ class PostRecipeSerializer(serializers.ModelSerializer):
             }).data
 
 
-class FavouriteSerializer(serializers.ModelSerializer):
+class FavoriteSerializer(serializers.ModelSerializer):
     """Серилизатор для избранных рецептов."""
 
     class Meta:
-        model = Favourite
+        model = Favorite
         fields = ('recipe', 'user')
 
     def validate(self, data):
         """Функция для проверки дубликатов всписке избранного."""
         user = data['user']
-        if user.favourites.filter(recipe=data['recipe']).exists():
+        if user.favorites.filter(recipe=data['recipe']).exists():
             raise serializers.ValidationError(
                 'Рецепт уже в избранном.'
             )
