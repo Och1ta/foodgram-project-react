@@ -11,12 +11,12 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
-from backend.api.serializers import UserSerializer, FollowingSerializer, IngredientSerializer, TagSerializer, \
+from api.serializers import UserSerializer, FollowingSerializer, IngredientSerializer, TagSerializer, \
     GetRecipeSerializer, PostRecipeSerializer, ShortRecipeCellSerializer
-from backend.recipe.filters import SearchIngredientFilter, RecipeFilter
-from backend.recipe.models import Ingredient, Tag, Recipe, Favorite, ShoppingCart, IngredientsAmount
-from backend.recipe.permissions import IsUserOrAdmin
-from backend.users.models import Follow
+from recipe.filters import SearchIngredientFilter, RecipeFilter
+from recipe.models import Ingredient, Tag, Recipe, Favorite, ShoppingCart, IngredientsAmount
+from recipe.permissions import IsUserOrAdmin
+from users.models import Follow
 
 
 User = get_user_model()
