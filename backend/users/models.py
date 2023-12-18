@@ -1,40 +1,43 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-from constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_FIRST_NAME,
-                       MAX_LENGTH_LAST_NAME, MAX_LENGTH_USERNAME,
-                       MAX_LENGTH_PASSWORD)
-from users.validators import username_regular
+from users.validators import validate_username
 
 
 class User(AbstractUser):
     """Кастомная модель User"""
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = (
+        'username', 'first_name',
+        'last_name', 'password',
+    )
+
     username = models.CharField(
-        max_length=MAX_LENGTH_EMAIL,
+        max_length=254,
         blank=False,
         unique=True,
-        validators=(username_regular,),
+        validators=[validate_username],
         verbose_name='Никнейм'
     )
     first_name = models.CharField(
-        max_length=MAX_LENGTH_FIRST_NAME,
+        max_length=150,
         blank=False,
         verbose_name='Имя'
     )
     last_name = models.CharField(
-        max_length=MAX_LENGTH_LAST_NAME,
+        max_length=150,
         blank=False,
         verbose_name='Фамилия'
     )
     email = models.EmailField(
-        max_length=MAX_LENGTH_USERNAME,
+        max_length=150,
         blank=False,
         unique=True,
         verbose_name='Электроная почта'
     )
     password = models.CharField(
-        max_length=MAX_LENGTH_PASSWORD,
+        max_length=150,
         blank=False,
         verbose_name='Пароль'
     )
@@ -42,18 +45,9 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ('id',)
-        constraints = (
-            models.UniqueConstraint(
-                fields=('username',), name='unique_username'
-            ),
-            models.UniqueConstraint(
-                fields=('email',), name='unique_email'
-            ),
-        )
 
-        def __str__(self):
-            return self.username
+    def __str__(self):
+        return self.username
 
 
 class Follow(models.Model):
@@ -76,4 +70,4 @@ class Follow(models.Model):
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return f'{self.user} подписался на {self.subscriber}'
+        return f'{self.user} подписался на {self.following}'
