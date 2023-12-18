@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.contrib.admin import display
 
-from .models import (
-    Ingredient, IngredientsAmount, Recipe, ShoppingCart, Tag, Favorite
+from recipe.models import (
+    Ingredient, IngredientsRecipe, Recipe, ShoppingCart, Tag, Favorite
 )
 
 
@@ -18,16 +18,16 @@ class RecipeAdmin(admin.ModelAdmin):
 
 
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'units_measurement')
+    list_display = ('name', 'measurement_unit')
     list_filter = ['name']
 
 
-class IngredientsAmountAdmin(admin.ModelAdmin):
+class IngredientsRecipeAdmin(admin.ModelAdmin):
     list_display = ('recipe', 'ingredient', 'amount')
 
 
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'color_code', 'slug')
+    list_display = ('name', 'color', 'slug')
     list_filter = ['slug']
 
 
@@ -43,5 +43,5 @@ admin.site.register(Favorite, FavoriteAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(Recipe, RecipeAdmin)
 admin.site.register(Tag, TagAdmin)
-admin.site.register(IngredientsAmount, IngredientsAmountAdmin)
+admin.site.register(IngredientsRecipe, IngredientsRecipeAdmin)
 admin.site.register(ShoppingCart, ShoppingCartAdmin)
