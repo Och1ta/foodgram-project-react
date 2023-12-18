@@ -7,20 +7,20 @@ from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
+from api.paginations import CustomLimitPagination
+from api.permissions import IsUserOrAdmin
 from api.filters import SearchIngredientFilter, RecipeFilter
 from api.serializers import (
-    UserSerializer, FollowingSerializer, IngredientSerializer,
+    UserListSerializer, FollowingSerializer, IngredientSerializer,
     TagSerializer, GetRecipeSerializer, PostRecipeSerializer,
-    ShortRecipeCellSerializer
+    BriefRecipeSerializer
 )
 from recipe.models import (
-    Ingredient, Tag, Recipe, Favorite, ShoppingCart, IngredientsAmount
+    Ingredient, Tag, Recipe, Favorite, ShoppingCart, IngredientsRecipe
 )
-from api.permissions import IsUserOrAdmin
 from users.models import Follow
 
 
@@ -28,22 +28,26 @@ User = get_user_model()
 
 
 class UserViewSet(UserViewSet):
-    """Кастомный юзер с определенным набором полей."""
+    """Кастомный юзер с определенным набором полей.
+
+    Эндпоинты @action:
+        subscriptions
+        subscribe
+    """
 
     queryset = User.objects.all()
-    pagination_class = PageNumberPagination
-    serializer_class = UserSerializer
+    pagination_class = CustomLimitPagination
+    serializer_class = UserListSerializer
 
     @action(
         detail=False,
         permission_classes=(IsAuthenticated,)
     )
     def me(self, request):
+        """Запрещаем неавторизованному пользователю
+        доступ к странице текущего пользователя.
         """
-        Запрещаем неавторизованному пользователю доступ
-        к странице текущего пользователя.
-        """
-        serializer = UserSerializer(
+        serializer = UserListSerializer(
             request.user, context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -54,7 +58,10 @@ class UserViewSet(UserViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def subscribe(self, request, **kwargs):
-        """Подписаться на пользователя."""
+        """
+        Подписаться на пользователя.
+        Доступно только авторизованным пользователям.
+        """
         user = request.user
         author = get_object_or_404(User, id=kwargs['id'])
         if request.method == 'POST':
@@ -87,6 +94,7 @@ class UserViewSet(UserViewSet):
         """
         Возвращает список пользователей,
         на которых подписан текущий пользователь.
+        Страница 'Мои подписки'
         """
         user_following_ids_set = set(
             Follow
@@ -106,7 +114,7 @@ class UserViewSet(UserViewSet):
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet Ingredient."""
+    """ViewSet модели Ingredient."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
@@ -116,7 +124,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet Tag."""
+    """ViewSet модели Tag."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -124,9 +132,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """Получаем список рецептов и конкретный рецепт."""
+    """Получаем список рецептов и конкретный рецепт"""
 
-    pagination_class = PageNumberPagination
+    pagination_class = CustomLimitPagination
     permission_classes = (IsUserOrAdmin,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
@@ -139,12 +147,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """Определяем текущего пользователя."""
         if not self.request.user.is_authenticated:
             raise PermissionDenied(
-                'Только авторизованный пользователь может создать рецепт.'
-            )
+                'Только авторизованный пользователь может создать рецепт.')
         serializer.save(author=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        """Проверка на создание рецепта только авторизованному пользователю."""
+        """
+        Даем право на создание рецепта только
+        авторизованному пользователю.
+        """
         if not request.user.is_authenticated:
             return Response(
                 {'detail': 'Only registered users can create recipes.'},
@@ -158,12 +168,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return PostRecipeSerializer
 
     def add_or_remove(self, request, model, recipe, message):
-        """
-        Функция создания/удаления для
+        """Общая функция создания/удаления для
         списка избранного и списка покупок.
         """
         if request.method == 'POST':
-            serializer = ShortRecipeCellSerializer(
+            serializer = BriefRecipeSerializer(
                 recipe,
                 data=request.data,
                 context={'request': request}
@@ -205,7 +214,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def favorite(self, request, pk):
-        """Добавить рецепт в список избранное."""
+        """
+        Добавить рецепт в список избранное.
+        Доступно только авторизованным пользователям.
+        """
         recipe = get_object_or_404(Recipe, id=pk)
         return self.add_or_remove(
             request,
@@ -220,7 +232,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def shopping_cart(self, request, pk):
-        """Добавить рецепт в список покупок."""
+        """
+        Добавить рецепт в список покупок.
+        Доступно только авторизованным пользователям.
+        """
         recipe = get_object_or_404(Recipe, id=pk)
         return self.add_or_remove(
             request,
@@ -231,14 +246,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=False,
-        methods=['get'],
+        methods=('GET',),
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
         recipes_for_shopping_lists = Recipe.objects.filter(
             shoppinglist__user=request.user
         )
-        ingredients = IngredientsAmount.objects.filter(
+        ingredients = IngredientsRecipe.objects.filter(
             recipe__in=recipes_for_shopping_lists
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
@@ -246,10 +261,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shopping_list = ['Список покупок:\n']
         for ingredient in ingredients:
             name = ingredient['ingredient__name']
-            measurement_unit = ingredient['ingredient__measurement_unit']
+            measurement_unit = ingredient[
+                'ingredient__measurement_unit'
+            ]
             amount = ingredient['ingredient__amount']
-            shopping_list.append(f'\n{name} - {amount} {measurement_unit}')
-        response = HttpResponse(shopping_list, content_type='text/plain')
+            shopping_list.append(
+                f'\n{name} - {amount} {measurement_unit}'
+            )
+        response = HttpResponse(
+            shopping_list, content_type='text/plain'
+        )
         response['Content-Disposition'] = ('attachment;'
-                                           'filename="shopping_list.txt"')
+                                           'filename="shopping_list.txt"'
+                                           )
         return response
