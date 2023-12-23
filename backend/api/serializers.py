@@ -7,27 +7,6 @@ from recipe.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
 from users.models import Subscription, User
 
 
-class CustomUserSerializer(UserSerializer):
-    """Serializer for Custom User"""
-
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name',
-            'last_name', 'is_subscribed'
-        )
-
-    def get_is_subscribed(self, obj):
-        """Функция проверки подписки"""
-        user = self.context.get('request').user
-        if user.is_anonymous:
-            return False
-        return Subscription.objects.filter(
-            user=user, author=obj.id).exists()
-
-
 class CustomUserCreateSerializer(UserCreateSerializer):
     """Serizlizer for Create Custom User"""
 
@@ -48,6 +27,26 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
+
+
+class CustomUserSerializer(UserSerializer):
+    """Serializer for Custom User"""
+
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed'
+        )
+
+    def get_is_subscribed(self, obj):
+        """Функция проверки подписки"""
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return Subscription.objects.filter(user=user, author=obj.id).exists()
 
 
 class IngredientSerializer(serializers.ModelSerializer):
