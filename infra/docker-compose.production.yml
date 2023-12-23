@@ -7,29 +7,36 @@ volumes:
 
 services:
   db:
-    image: postgres:13
-    env_file: .env
+    image: postgres:13.0-alpine
     volumes:
       - pg_data:/var/lib/postgresql/data
+    env_file: .env
+
   backend:
     image: aakabanov/foodgram_backend
     env_file: .env
+    restart: always
+    volumes:
+      - static:/app/static/
+      - media:/app/media/
     depends_on:
       - db
-    volumes:
-      - static:/static/
-      - media:/app/media/
+
   frontend:
     image: aakabanov/foodgram_frontend
     env_file: .env
     volumes:
       - ../frontend/:/app/result_build/
+    depends_on:
+      - backend
+
   nginx:
     image: aakabanov/foodgram_gateway
     env_file: .env
     ports:
       - "8000:80"
     volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
       - static:/static/
@@ -37,3 +44,4 @@ services:
     depends_on:
       - backend
       - frontend
+      - db
