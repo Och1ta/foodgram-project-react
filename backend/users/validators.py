@@ -2,13 +2,15 @@ import re
 
 from django.core.exceptions import ValidationError
 
-NAME_VALID = re.compile(r'^[\w.@+-]+')
 
-
-def validate_username(name):
-    if name == 'me':
-        raise ValidationError('Имя пользователя "me" использовать нельзя!')
-    if not NAME_VALID.fullmatch(name):
+def username_validator(value):
+    symbol = ''.join(set(re.sub(r'[\w.@+-]', '', value)))
+    if value == 'me':
         raise ValidationError(
-            'Можно использовать только буквы, цифры и "@.+-_".'
+            'Имя "me" в качестве username запрещено'
         )
+    if symbol:
+        raise ValidationError(
+            f'Запрещено использование {symbol} в имени'
+        )
+    return value
