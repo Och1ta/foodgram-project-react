@@ -48,8 +48,10 @@ class CustomUserSerializer(UserSerializer):
         """Функция проверки подписки"""
         user = self.context.get('request').user
         return (
-            user.is_authenticated and
-            Subscription.objects.filter(user=user, author=obj.id).exists()
+            user.is_authenticated
+            and Subscription.objects.filter(
+                user=user,
+                author=obj.id).exists()
         )
 
 
@@ -105,7 +107,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(
         source='ingredient_recipe',
         many=True,
-        read_only=True,)
+        read_only=True, )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -238,6 +240,7 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 class FavoriteSerializer(serializers.ModelSerializer):
     """Serializer for Favorite model"""
+
     class Meta:
         model = Favorite
         fields = ('user', 'recipe')
