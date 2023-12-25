@@ -2,9 +2,8 @@ from django.db.models import Sum
 from django.shortcuts import HttpResponse, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import status, views, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.generics import ListAPIView
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
@@ -18,6 +17,7 @@ from api.serializers import (
     SubscriptionSerializer, TagSerializer
 )
 from recipe.models import Ingredient, IngredientInRecipe, Recipe, Tag
+from rest_framework.views import APIView
 from users.models import Subscription, User
 
 
@@ -28,31 +28,16 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = CustomUserSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
-
-class SubscriptionViewSet(ListAPIView):
-    serializer_class = SubscriptionSerializer
-    pagination_class = CustomPagination
-    permission_classes = (IsAuthenticated,)
-
-    def get_queryset(self):
-        return User.objects.filter(following__user=self.request.user)
-
-
-class SubscribeView(views.APIView):
-    serializer_class = SubscriptionSerializer
-    pagination_class = CustomPagination
-    permission_classes = (IsAuthenticated,)
-
+    @action(
+        detail=False,
+        methods=['POST'],
+        permission_classes=(IsAuthenticated,)
+    )
     def post(self, request):
         user_id = self.kwargs.get('user_id')
-        if user_id == request.user.id:
-            return Response(
-                {'Запрещено подписываться на себя'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         if Subscription.objects.filter(
-                user=request.user,
-                author_id=user_id
+            user=request.user,
+            author_id=user_id
         ).exists():
             return Response(
                 {'Вы уже подписаны на автора'},
@@ -70,6 +55,11 @@ class SubscribeView(views.APIView):
             status=status.HTTP_201_CREATED
         )
 
+    @action(
+        detail=False,
+        methods=['DELETE'],
+        permission_classes=(IsAuthenticated,)
+    )
     def delete(self, request):
         user_id = self.kwargs.get('user_id')
         get_object_or_404(User, id=user_id)
@@ -84,6 +74,25 @@ class SubscribeView(views.APIView):
             {'Вы не подписаны на пользователя'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @action(
+        detail=False,
+        methods=['GET'],
+        permission_classes=(IsAuthenticated,)
+    )
+    def subscriptions(self, request):
+        """
+        Возвращает список пользователей,
+        на которых подписан текущий пользователь.
+        """
+        subscriptions = User.objects.filter(
+            author__user=request.user
+        )
+        page = self.paginate_queryset(subscriptions)
+        serializer = SubscriptionSerializer(
+            page, many=True, context={'request': request}
+        )
+        return self.get_paginated_response(serializer.data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -140,8 +149,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(
                 serializer.data, status=status.HTTP_201_CREATED
             )
-
-        if self.request.method == 'DELETE':
+        else:
             if not model_obj.exists():
                 return Response(status=status.HTTP_400_BAD_REQUEST)
         model_obj.delete()
@@ -171,17 +179,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         """
         return self.recipe_post_delete(pk, ShoppingCartSerializer)
 
-    @action(
-        detail=False,
-        methods=['get', ],
-        url_path='download_shopping_cart',
-        permission_classes=(IsAuthenticated,),
-        pagination_class=None
-    )
-    def download_shopping_cart(self, request):
+
+class DownloadShoppingCartViewSet(APIView):
+    """Метод загрузки списка покупки"""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
         ingredients = IngredientInRecipe.objects.filter(
             recipe__shoppingcart_recipe__user=request.user).order_by(
-                'ingredient__name').values(
+            'ingredient__name').values(
             'ingredient__name',
             'ingredient__measurement_unit'
         ).annotate(ingredient_amount=Sum('amount'))

@@ -49,17 +49,17 @@ class Tag(models.Model):
         verbose_name='Название тэга'
     )
     color = ColorField(
-        verbose_name='Цвет в формате HEX',
         format='hex',
         max_length=MAX_LENGTH_COLOR,
-        default='#000000',
+        default='#17A400',
         unique=True,
         validators=[
             RegexValidator(
                 regex=r'^#([A-F0-9]{6})$',
                 code='color_error'
             )
-        ]
+        ],
+        verbose_name='Цвет в формате HEX'
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
@@ -180,11 +180,13 @@ class AbsractUserRecipe(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Пользователь',
+        related_name='%(class)s_user',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
+        related_name='%(class)s_recipe',
     )
 
     class Meta:
