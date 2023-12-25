@@ -1,17 +1,27 @@
+from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.db import models
+
+from recipe.constants import (
+    MINIMUM_COOKING_TIME, MAX_LENGTH_RECIPE_NAME, MAX_LENGTH_TAG_NAME,
+    MAX_LENGTH_SLUG, MAX_LENGTH_UNIT_MEASURE, MAX_LENGTH_COLOR,
+    MAXIMUM_COOKING_TIME, MINIMUM_COOKING_AMOUNT,
+    MAXIMUM_INGREDIENT_AMOUNT, MAX_LENGTH_INGREDIENT_NAME
+)
+
 
 User = get_user_model()
 
 
 class Ingredient(models.Model):
+    """Ingridient abstract model."""
     name = models.CharField(
-        max_length=200,
+        max_length=MAX_LENGTH_INGREDIENT_NAME,
         verbose_name='Ингридиент'
     )
     measurement_unit = models.CharField(
-        max_length=200,
+        max_length=MAX_LENGTH_UNIT_MEASURE,
         verbose_name='Единицы измерения'
     )
 
@@ -19,39 +29,40 @@ class Ingredient(models.Model):
         ordering = ('name',)
         verbose_name = 'Ингридиент'
         verbose_name_plural = 'Ингридиенты'
+        constraints = (
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'],
+                name='unique_ingredient'
+            ),
+        )
 
     def __str__(self):
         return self.name
 
 
 class Tag(models.Model):
-    """Tag model."""
+    """Tag abstract model."""
 
-    ORANGE = '#FFA500'
-    GREEN = '#008000'
-    YELLOW = '#FFFF00'
-    BLUE = '#0000FF'
-
-    COLOR_CHOICES = [
-        (ORANGE, 'Оранжевый'),
-        (GREEN, 'Зеленый'),
-        (YELLOW, 'Желтый'),
-        (BLUE, 'Синий'),
-    ]
     name = models.CharField(
-        max_length=200,
+        max_length=MAX_LENGTH_TAG_NAME,
         unique=True,
         verbose_name='Название тэга'
     )
-    color = models.CharField(
-        max_length=7,
+    color = ColorField(
+        verbose_name='Цвет в формате HEX',
+        format='hex',
+        max_length=MAX_LENGTH_COLOR,
+        default='#000000',
         unique=True,
-        choices=COLOR_CHOICES,
-        default=BLUE,
-        verbose_name='Цвет'
+        validators=[
+            RegexValidator(
+                regex=r'^#([A-F0-9]{6})$',
+                code='color_error'
+            )
+        ]
     )
     slug = models.SlugField(
-        max_length=200,
+        max_length=MAX_LENGTH_SLUG,
         unique=True,
         verbose_name='Слаг'
     )
@@ -66,10 +77,10 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
-    """Recipe model."""
+    """Recipe abstract model."""
 
     name = models.CharField(
-        max_length=200,
+        max_length=MAX_LENGTH_RECIPE_NAME,
         verbose_name='Название'
     )
     author = models.ForeignKey(
@@ -104,8 +115,12 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(
-                1,
+                MINIMUM_COOKING_TIME,
                 message='Минимальное время 1 минута!'),
+            MaxValueValidator(
+                MAXIMUM_COOKING_TIME,
+                message='Превысили максимальное время 240 минут!'
+            )
         ],
         verbose_name='Время приготовления (в минутах)',
     )
@@ -132,11 +147,15 @@ class IngredientInRecipe(models.Model):
         on_delete=models.CASCADE,
         related_name='ingredients_recipe',
     )
-    amount = models.PositiveIntegerField(
+    amount = models.PositiveSmallIntegerField(
         validators=[
             MinValueValidator(
-                1,
+                MINIMUM_COOKING_AMOUNT,
                 message='Минимальное значение 1!'),
+            MaxValueValidator(
+                MAXIMUM_INGREDIENT_AMOUNT,
+                message='Максимальное значение 1000!'
+            )
         ],
         verbose_name='Количество ингридиента',
     )
@@ -155,19 +174,25 @@ class IngredientInRecipe(models.Model):
         return f'{self.recipe} - {self.ingredient}'
 
 
-class Favorite(models.Model):
-    """Favourites model."""
-
+class AbsractUserRecipe(models.Model):
+    """Abstract model for Favorite and ShoppingCart model"""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='favorite_user',
+        verbose_name='Пользователь',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='favorite_recipe',
+        verbose_name='Рецепт',
     )
+
+    class Meta:
+        abstract = True
+
+
+class Favorite(AbsractUserRecipe):
+    """Favourites abstract model."""
 
     class Meta:
         verbose_name = 'Избранный рецепт'
@@ -183,19 +208,8 @@ class Favorite(models.Model):
         return f'{self.user} - {self.recipe}'
 
 
-class ShoppingCart(models.Model):
-    """ShoppingCart model."""
-
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='shoppingcart_user',
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name='shoppingcart_recipe',
-    )
+class ShoppingCart(AbsractUserRecipe):
+    """ShoppingCart abstract model."""
 
     class Meta:
         verbose_name = 'Cписок покупок'
