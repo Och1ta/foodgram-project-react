@@ -5,7 +5,8 @@ from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+                                        IsAuthenticatedOrReadOnly, SAFE_METHODS)
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from api.filters import IngredientSearchFilter, RecipesFilter
@@ -16,8 +17,9 @@ from api.serializers import (
     IngredientSerializer, RecipeSerializer, ShoppingCartSerializer,
     SubscriptionSerializer, TagSerializer
 )
-from recipe.models import Ingredient, IngredientInRecipe, Recipe, Tag
-from rest_framework.views import APIView
+from recipe.models import (
+    Ingredient, IngredientInRecipe, Recipe, Tag, Favorite, ShoppingCart
+)
 from users.models import Subscription, User
 
 
@@ -156,28 +158,62 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        methods=['POST', 'DELETE'],
+        methods=['POST'],
         detail=True,
         permission_classes=(IsAuthenticated,)
     )
-    def favorite(self, pk=None):
+    def favorite(self, request, pk=None):
         """
         Добавить рецепт в список избранное.
         Доступно только авторизованным пользователям.
         """
-        return self.recipe_post_delete(pk, FavoriteSerializer)
+        serializer = FavoriteSerializer(
+            data={'user': request.user.id, 'recipe': pk},
+            context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk=None):
+        """Удалить рецепт из списка избранного"""
+        instance = Favorite.objects.filter(
+            user=request.user, recipe_id=pk)
+        if instance.exists():
+            instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'error': 'Такого рецепта нет!'},
+            status=status.HTTP_400_BAD_REQUEST)
 
     @action(
-        methods=['POST', 'DELETE'],
+        methods=['POST'],
         detail=True,
         permission_classes=(IsAuthenticated,)
     )
-    def shopping_cart(self, pk=None):
+    def shopping_cart(self, request, pk=None):
         """
         Добавить рецепт в список покупок.
         Доступно только авторизованным пользователям.
         """
-        return self.recipe_post_delete(pk, ShoppingCartSerializer)
+        serializer = ShoppingCartSerializer(
+            data={'user': request.user.id, 'recipe': pk},
+            context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk=None):
+        """Удалить рецепт из списка покупок"""
+        instance = ShoppingCart.objects.filter(
+            user=request.user, recipe_id=pk)
+        if instance.exists():
+            instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {'error': 'Такого рецепта нет!'},
+            status=status.HTTP_400_BAD_REQUEST)
 
 
 class DownloadShoppingCartViewSet(APIView):
