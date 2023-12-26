@@ -38,10 +38,9 @@ class CustomUserSerializer(UserSerializer):
         user = self.context.get('request').user
         return (
             user.is_authenticated
-            and Subscription.objects.filter(
-            user=user,
-            author=obj.id).exists()
-        )
+            and Subscription.objects.filter(user=user,
+                                            author=obj.id
+                                            ).exists())
 
 
 class SubscriptionSerializer(CustomUserSerializer):
