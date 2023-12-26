@@ -5,7 +5,7 @@ from recipe.models import Recipe
 
 
 class IngredientSearchFilter(SearchFilter):
-    """Выполненяем поиск ингредиентов по полю 'name'"""
+    """Выполненяем поиск ингредиентов по полю 'name'."""
 
     search_param = 'name'
 
