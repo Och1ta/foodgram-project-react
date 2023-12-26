@@ -55,12 +55,6 @@ class Tag(models.Model):
         max_length=MAX_LENGTH_COLOR,
         default='#17A400',
         unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^#([A-F0-9]{6})$',
-                code='color_error'
-            )
-        ],
         verbose_name='Цвет в формате HEX'
     )
     slug = models.SlugField(
@@ -193,6 +187,10 @@ class AbsractUserRecipe(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('recipe',)
+
+    def __str__(self):
+        return f'{self.user} - {self.recipe}'
 
 
 class Favorite(AbsractUserRecipe):
@@ -208,9 +206,6 @@ class Favorite(AbsractUserRecipe):
             )
         ]
 
-    def __str__(self):
-        return f'{self.user} - {self.recipe}'
-
 
 class ShoppingCart(AbsractUserRecipe):
     """ShoppingCart abstract model."""
@@ -224,6 +219,3 @@ class ShoppingCart(AbsractUserRecipe):
                 name='unique_shoppingcart'
             )
         ]
-
-    def __str__(self):
-        return f'{self.user} - {self.recipe}'
