@@ -21,17 +21,6 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         )
 
 
-class TagSerializer(serializers.ModelSerializer):
-    """
-    Tag Serializer.
-    Обрабатывает только GET запросы.
-    """
-
-    class Meta:
-        model = Tag
-        fields = ('id', 'name', 'color', 'slug')
-
-
 class CustomUserSerializer(UserSerializer):
     """Serializer for Custom User"""
 
@@ -50,9 +39,53 @@ class CustomUserSerializer(UserSerializer):
         return (
             user.is_authenticated
             and Subscription.objects.filter(
-                user=user,
-                author=obj.id).exists()
+            user=user,
+            author=obj.id).exists()
         )
+
+
+class SubscriptionSerializer(CustomUserSerializer):
+    """Serializer for Subscription"""
+
+    recipes = serializers.SerializerMethodField(read_only=True)
+    recipes_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username', 'first_name', 'last_name',
+                  'is_subscribed', 'recipes', 'recipes_count')
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        author_id = int(self.context['view'].kwargs.get('id'))
+        if author_id == user.id:
+            raise serializers.ValidationError(
+                'Подписаться на себя нельзя.'
+            )
+        return attrs
+
+    @staticmethod
+    def get_recipes_count(obj):
+        return obj.recipes.count()
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes = obj.recipes.all()
+        recipes_limit = request.query_params.get('recipes_limit')
+        if recipes_limit:
+            recipes = recipes[:int(recipes_limit)]
+        return RecipeForUserSerializer(recipes, many=True).data
+
+
+class TagSerializer(serializers.ModelSerializer):
+    """
+    Tag Serializer.
+    Обрабатывает только GET запросы.
+    """
+
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'color', 'slug')
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -99,7 +132,7 @@ class IngredientAddAmountSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    """Serializer for Recipe model"""
+    """Serializer for read Recipe model"""
 
     tags = TagSerializer(read_only=True, many=True)
     author = CustomUserSerializer(read_only=True)
@@ -260,8 +293,22 @@ class FavoriteSerializer(serializers.ModelSerializer):
 class ShoppingCartSerializer(FavoriteSerializer):
     """Serializer for Shopping Cart"""
 
-    class Meta(FavoriteSerializer.Meta):
+    class Meta:
         model = ShoppingCart
+        fields = ('user', 'recipe')
+
+    def validate(self, data):
+        user_id = data.get('user').id
+        recipe_id = data.get('recipe').id
+        if self.Meta.model.objects.filter(user=user_id,
+                                          recipe=recipe_id).exists():
+            raise serializers.ValidationError('Рецепт уже добавлен в список.')
+        return data
+
+    def to_representation(self, instance):
+        serializer = ShortRecipeSerializer(
+            instance.recipe, context=self.context)
+        return serializer.data
 
 
 class RecipeForUserSerializer(serializers.ModelSerializer):
@@ -270,36 +317,3 @@ class RecipeForUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class SubscriptionSerializer(CustomUserSerializer):
-    """Serializer for Subscription"""
-
-    recipes = serializers.SerializerMethodField(read_only=True)
-    recipes_count = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'recipes', 'recipes_count')
-
-    def validate(self, attrs):
-        user = self.context['request'].user
-        author_id = int(self.context['view'].kwargs.get('id'))
-        if author_id == user.id:
-            raise serializers.ValidationError(
-                'Подписаться на себя нельзя.'
-            )
-        return attrs
-
-    @staticmethod
-    def get_recipes_count(obj):
-        return obj.recipes.count()
-
-    def get_recipes(self, obj):
-        request = self.context.get('request')
-        recipes = obj.recipes.all()
-        recipes_limit = request.query_params.get('recipes_limit')
-        if recipes_limit:
-            recipes = recipes[:int(recipes_limit)]
-        return RecipeForUserSerializer(recipes, many=True).data
