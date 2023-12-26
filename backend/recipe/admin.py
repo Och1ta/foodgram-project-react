@@ -43,8 +43,7 @@ class RecipeAdmin(admin.ModelAdmin):
         ]
         if ingredients_list:
             return ', '.join(ingredients_list)
-        else:
-            return '-'
+        return '-'
 
 
 @admin.register(Ingredient)
