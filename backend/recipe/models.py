@@ -51,16 +51,19 @@ class Tag(models.Model):
         verbose_name='Название тэга'
     )
     color = ColorField(
-        format='hex',
-        max_length=MAX_LENGTH_COLOR,
         default='#17A400',
+        max_length=MAX_LENGTH_COLOR,
         unique=True,
         verbose_name='Цвет в формате HEX'
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_SLUG,
         unique=True,
-        verbose_name='Слаг'
+        verbose_name='Слаг',
+        validators=[RegexValidator(
+            regex=r'^[-a-zA-Z0-9_]+$',
+            message='Использован недопустимый символ'
+        )]
     )
 
     class Meta:
@@ -172,52 +175,48 @@ class IngredientInRecipe(models.Model):
         return f'{self.recipe} - {self.ingredient}'
 
 
-class AbsractUserRecipe(models.Model):
-    """Abstract model for Favorite and ShoppingCart model"""
+class AbsractFavoriteShopping(models.Model):
+    """Abstract model for Favorite and ShoppingCart model."""
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Пользователь',
-        related_name='%(class)s_user',
+        related_name='%(app_label)s_%(class)s_related',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='%(class)s_recipe',
+        related_name='%(app_label)s_%(class)s_related',
     )
 
     class Meta:
         abstract = True
         ordering = ('recipe',)
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name=('\n%(app_label)s_%(class)s recipe already'
+                      ' linked to this user\n'),
+            ),
+        )
 
     def __str__(self):
         return f'{self.user} - {self.recipe}'
 
 
-class Favorite(AbsractUserRecipe):
+class Favorite(AbsractFavoriteShopping):
     """Favourites abstract model."""
 
-    class Meta:
+    class Meta(AbsractFavoriteShopping.Meta):
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='unique_name_favorite'
-            )
-        ]
 
 
-class ShoppingCart(AbsractUserRecipe):
+class ShoppingCart(AbsractFavoriteShopping):
     """ShoppingCart abstract model."""
 
-    class Meta:
+    class Meta(AbsractFavoriteShopping.Meta):
         verbose_name = 'Cписок покупок'
         verbose_name_plural = 'Списки покупок'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='unique_shoppingcart'
-            )
-        ]
