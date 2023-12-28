@@ -46,10 +46,11 @@ class SubscribeSerializer(UserSerializer):
         queryset = obj.recipes.all()
         recipes_limit = self.context['request'].GET.get('recipes_limit')
         if recipes_limit and recipes_limit.isdigit():
-            queryset = queryset[: int(recipes_limit)]
+            queryset = queryset[:int(recipes_limit)]
         recipes = RecipeShortSerializer(
             queryset, many=True,
-            context=self.context)
+            context=self.context
+        )
         return recipes.data
 
 
@@ -66,13 +67,15 @@ class SubscribeCreateSerializer(serializers.ModelSerializer):
         if user_id == author_id:
             raise serializers.ValidationError(
                 detail='Нельзя подписаться на себя',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         if Subscription.objects.filter(
                 author=author_id,
                 user=user_id).exists():
             raise serializers.ValidationError(
                 detail='Вы уже подписались',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         return data
 
     def to_representation(self, instance):
@@ -119,10 +122,14 @@ class CreateAmountIngredientSerializer(serializers.ModelSerializer):
     """Serializer for ingredient amount creation."""
 
     id = serializers.PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all(), )
+        queryset=Ingredient.objects.all(),
+    )
     amount = serializers.IntegerField(
         min_value=MIN_AMOUNT,
         max_value=MAX_AMOUNT,
+        error_messages={
+            'min_value': f'Нужно больше чем {MIN_AMOUNT}.',
+            'max_value': f'Нужно меньше чем {MAX_AMOUNT}'}
     )
 
     class Meta:
@@ -187,6 +194,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     cooking_time = serializers.IntegerField(
         min_value=MIN_AMOUNT,
         max_value=MAX_AMOUNT,
+        error_messages={
+            'min_value': f'Времени нужно больше чем {MIN_AMOUNT}.',
+            'max_value': f'Времени нужно меньше чем {MAX_AMOUNT}'
+        }
     )
 
     class Meta:
@@ -201,26 +212,31 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if not data.get('image'):
             raise serializers.ValidationError(
                 detail='Должно быть изображение',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         tags = data.get('tags')
         if not tags:
             raise serializers.ValidationError(
                 detail='Должны быть теги',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         if len(set(tags)) != len(tags):
             raise serializers.ValidationError(
                 detail='Теги не должны повторяться',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         ingredients = data.get('ingredients')
         if not ingredients:
             raise serializers.ValidationError(
                 detail='Должны быть ингредиенты',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         if (len(set(item['id'] for item in ingredients))
                 != len(ingredients)):
             raise serializers.ValidationError(
                 detail='Ингредиенты не должны повторяться',
-                code=status.HTTP_400_BAD_REQUEST)
+                code=status.HTTP_400_BAD_REQUEST
+            )
         return data
 
     @staticmethod
@@ -267,7 +283,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 
 class UserRecipeRelationSerializer(serializers.ModelSerializer):
-    """Abstract sterilizer for favorites and shopping list/"""
+    """Abstract sterilizer for favorites and shopping list."""
 
     class Meta:
         fields = ('user', 'recipe')
