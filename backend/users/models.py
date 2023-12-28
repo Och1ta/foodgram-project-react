@@ -4,7 +4,6 @@ from django.core.validators import EmailValidator
 from django.db import models
 
 from recipes.constants import (MAX_LEN_EMAIL, MAX_LEN_NAME,)
-
 from users.validators import username_validator
 
 
