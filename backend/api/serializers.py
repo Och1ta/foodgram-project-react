@@ -217,7 +217,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 detail='Должны быть ингредиенты',
                 code=status.HTTP_400_BAD_REQUEST)
         if (len(set(item['id'] for item in ingredients))
-            != len(ingredients)):
+                != len(ingredients)):
             raise serializers.ValidationError(
                 detail='Ингредиенты не должны повторяться',
                 code=status.HTTP_400_BAD_REQUEST)

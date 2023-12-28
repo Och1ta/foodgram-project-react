@@ -107,10 +107,12 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления (в минутах)',
         validators=[
-            MinValueValidator(limit_value=MIN_AMOUNT,
-                              message=f'Минимальное время {MIN_AMOUNT} минута!'),
-            MaxValueValidator(limit_value=MAX_AMOUNT,
-                              message=f'Превысили максимальное время {MAX_AMOUNT} минут!'),
+            MinValueValidator(
+                limit_value=MIN_AMOUNT,
+                message=f'Минимальное время {MIN_AMOUNT} минута!'),
+            MaxValueValidator(
+                limit_value=MAX_AMOUNT,
+                message=f'Превысили максимальное время {MAX_AMOUNT} минут!'),
         ],
     )
 
@@ -164,7 +166,8 @@ class AmountIngredient(models.Model):
 
     def __str__(self):
         return (
-            f'{self.ingredient.name} ({self.ingredient.measurement_unit}) - '
+            f'{self.ingredient.name} '
+            f'({self.ingredient.measurement_unit}) - '
             f'{self.amount} '
         )
 
