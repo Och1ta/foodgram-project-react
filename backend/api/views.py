@@ -22,7 +22,6 @@ from recipes.models import (
     AmountIngredient, Favorite, Ingredient,
     Recipe, ShoppingCart, Tag
 )
-
 from users.models import Subscription, User
 
 
@@ -98,7 +97,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.select_related('author').prefetch_related(
         'tags', 'ingredients')
-    permission_classes = [AuthorOrReadOnly]
+    permission_classes = (AuthorOrReadOnly, IsAuthenticatedOrReadOnly)
     pagination_class = CustomPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = RecipeFilter
@@ -124,7 +123,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk=None):
-        """Удалить рецепт из списка избранного"""
+        """Удалить рецепт из списка избранного."""
         instance = Favorite.objects.filter(
             user=request.user, recipe_id=pk)
         if instance.exists():
