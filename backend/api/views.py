@@ -1,7 +1,4 @@
-from io import StringIO
-
 from django.db.models import Sum
-from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import permissions, status, viewsets
@@ -20,8 +17,12 @@ from api.serializers import (
     ShoppingCartCreateDeleteSerializer, SubscribeCreateSerializer,
     SubscribeSerializer, TagSerializer
 )
-from recipes.models import (AmountIngredient, Favorite, Ingredient,
-                            Recipe, ShoppingCart, Tag)
+from api.utils import generate_shopping_cart
+from recipes.models import (
+    AmountIngredient, Favorite, Ingredient,
+    Recipe, ShoppingCart, Tag
+)
+
 from users.models import Subscription, User
 
 
@@ -37,8 +38,10 @@ class UserViewSet(UserViewSet):
         return super().get_permissions()
 
     @action(
-        methods=['post'], detail=True,
-        permission_classes=[permissions.IsAuthenticated])
+        methods=['post'],
+        detail=True,
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def subscribe(self, request, id=None):
         serializer = SubscribeCreateSerializer(
             data={'user': request.user.id, 'author': id},
@@ -58,8 +61,11 @@ class UserViewSet(UserViewSet):
             {'error': 'no such subscribe'},
             status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['get'], detail=False,
-            permission_classes=[permissions.IsAuthenticated])
+    @action(
+        methods=['get'],
+        detail=False,
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def subscriptions(self, request):
         subscriptions = User.objects.filter(
             author__user=request.user)
@@ -103,8 +109,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return RecipeCreateSerializer
 
     @action(
-        methods=['post'], detail=True,
-        permission_classes=[permissions.IsAuthenticated])
+        methods=['post'],
+        detail=True,
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def favorite(self, request, pk=None):
         """Добавить рецепт в список избранное."""
         serializer = FavoriteCreateDeleteSerializer(
@@ -127,8 +135,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST)
 
     @action(
-        methods=['post'], detail=True,
-        permission_classes=[permissions.IsAuthenticated])
+        methods=['post'],
+        detail=True,
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def shopping_cart(self, request, pk=None):
         """Добавить рецепт в список покупок."""
         serializer = ShoppingCartCreateDeleteSerializer(
@@ -150,13 +160,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'error': 'no such recipe'},
             status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['get'], detail=False,
-            permission_classes=[permissions.IsAuthenticated])
+    @action(
+        methods=['get'],
+        detail=False,
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def download_shopping_cart(self, request):
-        text_stream = StringIO()
-        text_stream.write('Список покупок\n')
-        text_stream.write('Ингредиент - Единица измерения - Количество\n')
-        shopping_cart = (
+        return generate_shopping_cart(
             AmountIngredient.objects.select_related('recipe', 'ingredient')
             .filter(recipe__recipes_shoppingcart_related__user=request.user)
             .values_list(
@@ -164,11 +174,3 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'ingredient__measurement_unit')
             .annotate(amount=Sum('amount'))
             .order_by('ingredient__name'))
-        lines = (' - '.join(map(str, item)) + '\n' for item in shopping_cart)
-        text_stream.writelines(lines)
-        response = HttpResponse(
-            text_stream.getvalue(),
-            content_type='text/plain')
-        response['Content-Disposition'] = (
-            "attachment;filename='shopping_cart.txt'")
-        return response
