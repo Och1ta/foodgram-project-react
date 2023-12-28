@@ -2,6 +2,5 @@ env
 .venv
 .git
 db.sqlite3.bak
-db.sqlite3.bak
 .idea
 .env
