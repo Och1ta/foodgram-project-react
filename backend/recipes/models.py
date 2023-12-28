@@ -190,6 +190,7 @@ class UserRecipeRelation(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('recipe',)
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
