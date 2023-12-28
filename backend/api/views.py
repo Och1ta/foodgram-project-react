@@ -1,4 +1,5 @@
 from django.db.models import Sum
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import permissions, status, viewsets
@@ -17,7 +18,7 @@ from api.serializers import (
     ShoppingCartCreateDeleteSerializer, SubscribeCreateSerializer,
     SubscribeSerializer, TagSerializer
 )
-from api.utils import generate_shopping_cart
+from api.utils import generate_shopping_cart, delete_model_by_recipe
 from recipes.models import (
     AmountIngredient, Favorite, Ingredient,
     Recipe, ShoppingCart, Tag
@@ -51,14 +52,10 @@ class UserViewSet(UserViewSet):
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id=None):
-        subscription = Subscription.objects.filter(
-            user=request.user, author=id)
-        if subscription.exists():
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {'error': 'no such subscribe'},
-            status=status.HTTP_400_BAD_REQUEST)
+        subscription = get_object_or_404(Subscription.objects.filter(
+            user=request.user, author=id))
+        subscription.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         methods=['get'],
@@ -124,14 +121,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @favorite.mapping.delete
     def delete_favorite(self, request, pk=None):
         """Удалить рецепт из списка избранного."""
-        instance = Favorite.objects.filter(
-            user=request.user, recipe_id=pk)
-        if instance.exists():
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {'error': 'no such recipe'},
-            status=status.HTTP_400_BAD_REQUEST)
+        return delete_model_by_recipe(request, pk, Favorite)
 
     @action(
         methods=['post'],
@@ -150,14 +140,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk=None):
         """Удалить рецепт из списка покупок"""
-        instance = ShoppingCart.objects.filter(
-            user=request.user, recipe_id=pk)
-        if instance.exists():
-            instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {'error': 'no such recipe'},
-            status=status.HTTP_400_BAD_REQUEST)
+        return delete_model_by_recipe(request, pk, ShoppingCart)
 
     @action(
         methods=['get'],
