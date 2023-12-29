@@ -26,3 +26,12 @@ def delete_model_by_recipe(request, pk, model):
         user=request.user, recipe_id=pk))
     deleting_model.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def create_model_by_recipe(request, pk, model):
+    create_model = model(
+        data={'user': request.user.id, 'recipe': pk},
+        context={'request': request})
+    create_model.is_valid(raise_exception=True)
+    create_model.save()
+    return Response(create_model.data, status=status.HTTP_201_CREATED)
