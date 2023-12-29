@@ -34,7 +34,7 @@ class Ingredient(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.name}, {self.measurement_unit}'
+        return '{} {}'.format(self.name, self.measurement_unit)
 
 
 class Tag(models.Model):
@@ -128,7 +128,7 @@ class Recipe(models.Model):
         )
 
     def __str__(self) -> str:
-        return f'{self.name}. Автор: {self.author.username}'
+        return '{} {}'.format(self.name, self.author.username)
 
 
 class AmountIngredient(models.Model):
@@ -200,7 +200,7 @@ class UserRecipeRelation(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} - {self.recipe}'
+        return '{} {}'.format(self.user, self.recipe)
 
 
 class Favorite(UserRecipeRelation):
