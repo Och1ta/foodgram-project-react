@@ -1,6 +1,10 @@
 # Продуктовый помощник Foodgram
 
+![example workflow](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
+
 Продуктовый помощник Foodgram - это сервис, с помощью которого пользователи смогут публиковать рецепты, подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное», а перед походом в магазин скачивать сводный список продуктов, необходимых для приготовления одного или нескольких выбранных блюд. 
+
+[foodgramfinal.hopto.org](https://foodgramfinal.hopto.org)
 ```
 Для работы проекта был разработан и настроен CI/CD.
 ```
@@ -73,18 +77,9 @@ scp docker-compose.yaml <username>@<host>:/home/<username>/
 sudo -f docker-compose.production.yml up -d
 sudo -f docker-compose.production.yml exec backend python manage.py migrate # примените миграции
 sudo -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input # подгрузите статику
+sudo -f docker-compose.production.yml exec backend python manage.py load_data # загрузить моковые данные
 sudo -f docker-compose.production.yml exec backend python manage.py createsuperuser # создайте суперпользователя
 
 ```
 ### Автор
 [Кабнов Антон](https://github.com/Och1ta)
-
-
-_____________________________________________________________________
-Домен - [foodgramfinal.hopto.org](https://foodgramfinal.hopto.org)
-
-Имя Админа - Reviewer
-
-Эл.почта - 2@2.ru
-
-Пароль - 1111
