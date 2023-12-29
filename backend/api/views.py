@@ -18,7 +18,10 @@ from api.serializers import (
     ShoppingCartCreateDeleteSerializer, SubscribeCreateSerializer,
     SubscribeSerializer, TagSerializer
 )
-from api.utils import generate_shopping_cart, delete_model_by_recipe
+from api.utils import (
+    generate_shopping_cart, delete_model_by_recipe,
+    create_model_by_recipe
+)
 from recipes.models import (
     AmountIngredient, Favorite, Ingredient,
     Recipe, ShoppingCart, Tag
@@ -111,12 +114,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         """Добавить рецепт в список избранное."""
-        serializer = FavoriteCreateDeleteSerializer(
-            data={'user': request.user.id, 'recipe': pk},
-            context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return create_model_by_recipe(request, pk, Favorite)
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk=None):
@@ -130,12 +128,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Добавить рецепт в список покупок."""
-        serializer = ShoppingCartCreateDeleteSerializer(
-            data={'user': request.user.id, 'recipe': pk},
-            context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return create_model_by_recipe(request, pk, ShoppingCart)
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk=None):
