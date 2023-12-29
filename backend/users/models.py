@@ -43,7 +43,7 @@ class User(AbstractUser):
         ordering = ('username',)
 
     def __str__(self):
-        return {self.username}, {self.email}
+        return '{} {}'.format(self.username, self.email)
 
 
 class Subscription(models.Model):
@@ -75,7 +75,7 @@ class Subscription(models.Model):
         )
 
     def __str__(self):
-        return f'{self.user} - {self.author}'
+        return '{} {}'.format(self.user, self.author)
 
     def save(self, *args, **kwargs):
         if self.user == self.author:
