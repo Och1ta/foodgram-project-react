@@ -20,22 +20,13 @@ from api.serializers import (
 )
 from api.utils import (
     generate_shopping_cart, delete_model_by_recipe,
-    create_model_by_recipe
+    create_serializer_by_recipe
 )
 from recipes.models import (
     AmountIngredient, Favorite, Ingredient,
     Recipe, ShoppingCart, Tag
 )
 from users.models import Subscription, User
-
-
-# def create_model_by_recipe(request, pk, model):
-#     create_model = model(
-#         data={'user': request.user.id, 'recipe': pk},
-#         context={'request': request})
-#     create_model.is_valid(raise_exception=True)
-#     create_model.save()
-#     return Response(create_model.data, status=status.HTTP_201_CREATED)
 
 
 class UserViewSet(UserViewSet):
@@ -123,9 +114,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def favorite(self, request, pk=None):
         """Добавить рецепт в список избранное."""
-        return create_model_by_recipe(FavoriteCreateDeleteSerializer(
-            data={'user': request.user.id, 'recipe': pk},
-            context={'request': request}))
+        return create_serializer_by_recipe(
+            FavoriteCreateDeleteSerializer, request, pk
+        )
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk=None):
@@ -139,9 +130,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Добавить рецепт в список покупок."""
-        return create_model_by_recipe(ShoppingCartCreateDeleteSerializer(
-            data={'user': request.user.id, 'recipe': pk},
-            context={'request': request}))
+        return create_serializer_by_recipe(
+            ShoppingCartCreateDeleteSerializer, request, pk
+        )
 
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk=None):
