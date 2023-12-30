@@ -30,8 +30,8 @@ def delete_model_by_recipe(request, pk, model):
 
 def create_serializer_by_recipe(serializer, request, pk):
     create_serializer = serializer(
-            data={'user': request.user.id, 'recipe': pk},
-            context={'request': request})
+        data={'user': request.user.id, 'recipe': pk},
+        context={'request': request})
     create_serializer.is_valid(raise_exception=True)
     create_serializer.save()
     return Response(
